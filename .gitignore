@@ -1,171 +1,102 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+import pandas as pd
+import os
+import chardet
 
-# C extensions
-*.so
+def detectar_codificacion(archivo):
+    """Detecta la codificación de un archivo CSV."""
+    with open(archivo, 'rb') as f:
+        rawdata = f.read()
+        result = chardet.detect(rawdata)
+        return result['encoding']
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+def leer_csv_con_manejo_errores(archivo, sep=',', on_bad_lines='skip', encoding=None):
+    """Lee un archivo CSV y maneja posibles errores de parsing."""
+    if encoding is None:
+        encoding = detectar_codificacion(archivo)
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+    try:
+        df = pd.read_csv(archivo, sep=sep, on_bad_lines=on_bad_lines, encoding=encoding, engine='python')
+        return df
+    except pd.errors.ParserError as e:
+        print(f"Error al leer el archivo {archivo}: {e}")
+        return None
+    except UnicodeDecodeError as e:
+        print(f"Error de decodificación en el archivo {archivo}: {e}. Intenta especificar una codificación diferente.")
+        return None
+    except Exception as e:
+        print(f"Error inesperado al leer {archivo}: {e}")
+        return None
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
+def validar_dataframe(df, df_name, join_cols):
+    """Valida que un DataFrame tenga las columnas necesarias."""
+    if df is None:
+        print(f"Error: DataFrame '{df_name}' no se cargó correctamente.")
+        return False
 
-# Translations
-*.mo
-*.pot
+    for col in join_cols:
+        if col not in df.columns:
+            print(f"Error: La columna de unión '{col}' no existe en el DataFrame '{df_name}'.")
+            return False
+    return True
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+# Rutas de archivos
+ruta_base = "C:\\Users\\HP\\Desktop\\xd"
+archivo_paciente = os.path.join(ruta_base, "MaestroPaciente1324904.csv")
+archivo_personal = os.path.join(ruta_base, "MaestroPersonal1323310.csv")
+archivo_registrador = os.path.join(ruta_base, "MaestroRegistrador1324951.csv")
+archivo_trama = os.path.join(ruta_base, "NominalTrama15012025_132426.csv")
+ruta_salida = "C:\\Users\\HP\\Desktop\\xd2"
+archivo_salida = os.path.join(ruta_salida, "resultado_final.csv")
 
-# Flask stuff:
-instance/
-.webassets-cache
 
-# Scrapy stuff:
-.scrapy
+# Leer los archivos CSV
+df_paciente = leer_csv_con_manejo_errores(archivo_paciente, sep=';')
+if df_paciente is not None:
+    print("Columnas de df_paciente:", df_paciente.columns)
 
-# Sphinx documentation
-docs/_build/
+df_personal = leer_csv_con_manejo_errores(archivo_personal, sep=';')
+if df_personal is not None:
+    print("Columnas de df_personal:", df_personal.columns)
 
-# PyBuilder
-.pybuilder/
-target/
+df_registrador = leer_csv_con_manejo_errores(archivo_registrador, sep=';')
+if df_registrador is not None:
+    print("Columnas de df_registrador:", df_registrador.columns)
 
-# Jupyter Notebook
-.ipynb_checkpoints
 
-# IPython
-profile_default/
-ipython_config.py
+df_trama = leer_csv_con_manejo_errores(archivo_trama, sep=';')
+if df_trama is not None:
+    print("Columnas de df_trama:", df_trama.columns)
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+# Validación y Unión (con cambios importantes)
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+if all(df is not None for df in [df_paciente, df_personal, df_registrador, df_trama]):
+    try:
+        id_paciente_trama = df_trama.columns[df_trama.columns.str.contains('Id_Paciente', case=False, na=False)][0]
+    except IndexError:
+        print("Error: No se encuentra la columna 'Id_Paciente' en df_trama. Revisa el nombre o la estructura del archivo.")
+        exit()
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
+    try:
+        id_personal_trama = df_trama.columns[df_trama.columns.str.contains('Id_Personal', case=False, na=False)][0]
+    except IndexError:
+        print("Error: No se encuentra la columna 'Id_Personal' en df_trama. Revisa el nombre o la estructura del archivo.")
+        exit()
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
+    try:
+        id_registrador_trama = df_trama.columns[df_trama.columns.str.contains('Id_Registrador', case=False, na=False)][0]
+    except IndexError:
+        print("Error: No se encuentra la columna 'Id_Registrador' en df_trama. Revisa el nombre o la estructura del archivo.")
+        exit()
 
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#pdm.lock
-#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
-#   in version control.
-#   https://pdm.fming.dev/latest/usage/project/#working-with-version-control
-.pdm.toml
-.pdm-python
-.pdm-build/
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
+    df_merged = pd.merge(df_trama, df_paciente, on=id_paciente_trama, how='left', suffixes=('_trama', '_paciente'))
+    df_merged = pd.merge(df_merged, df_personal, on='Id_Personal', how='left', suffixes=('', '_personal'))
+    df_merged = pd.merge(df_merged, df_registrador, on='Id_Registrador', how='left', suffixes=('', '_registrador'))
+    df_merged = df_merged.fillna('N/A')
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
-
-# PyPI configuration file
-.pypirc
+    os.makedirs(ruta_salida, exist_ok=True)
+    df_merged.to_csv(archivo_salida, index=False)
+    print(f"Los archivos se han unido correctamente y guardado en: {archivo_salida}")
+else:
+    print("No se pudieron unir todos los archivos. Verifica los mensajes de error.")
